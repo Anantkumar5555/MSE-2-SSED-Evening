@@ -103,8 +103,8 @@ jobs:
         run: |
           {
             echo "## Published Docker Hub images"
-            echo "- Backend: `${{ secrets.DOCKERHUB_USERNAME }}/backend:v1` and `latest`"
-            echo "- Frontend: `${{ secrets.DOCKERHUB_USERNAME }}/frontend:v1` and `latest`"
+            echo "- Backend images published with v1 and latest tags."
+            echo "- Frontend images published with v1 and latest tags."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Capture deployment logs
