@@ -109,10 +109,21 @@ jobs:
 
       - name: Capture deployment logs
         if: failure()
-        run: docker compose -f docker-compose.deploy.yml ps && docker compose -f docker-compose.deploy.yml logs --no-color
+        run: |
+          if [ -f .env ]; then
+            docker compose -f docker-compose.deploy.yml ps
+            docker compose -f docker-compose.deploy.yml logs --no-color
+          else
+            echo "Deployment environment was not created; there are no Compose logs to collect."
+          fi
 
       - name: Clean up deployment
         if: always()
         # Keep named volumes intact. The GitHub-hosted runner is temporary, and
         # cleanup must never delete a database volume if this job is reused elsewhere.
-        run: docker compose -f docker-compose.deploy.yml down --remove-orphans || true
+        run: |
+          if [ -f .env ]; then
+            docker compose -f docker-compose.deploy.yml down --remove-orphans || true
+          else
+            echo "Deployment environment was not created; nothing to clean up."
+          fi
