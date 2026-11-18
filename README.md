@@ -338,3 +338,30 @@ Before submitting, verify the following:
 - [ ] PDF attached to the GitHub Pull Request.
 
 **Good Luck!**
+
+---
+
+## Local Docker run guide
+
+This repository includes a build-based local stack and a separate image-based deployment file.
+
+1. Copy `.env.example` to `.env` (`Copy-Item .env.example .env` in PowerShell, or `cp .env.example .env` in a Unix shell).
+2. In `.env`, set a local `POSTGRES_PASSWORD` and a long random `JWT_SECRET`. Keep the database password in the `DATABASE_URL` value in sync; use letters and numbers in the password so it is safe in the URL.
+3. Start the source-built stack with `docker compose up -d --build --wait`.
+4. Open `http://localhost:8080`. If that port is already in use, set `FRONTEND_PORT` to an available host port in `.env`.
+5. Check the services with `docker compose ps`; check API health at `http://localhost:3000/health` and the app through the frontend gateway.
+6. Stop with `docker compose down`. The named `postgres_data` volume retains the database; `docker compose down -v` removes it.
+
+PostgreSQL initializes the `users` and `tasks` tables from `backend/db/init.sql`. Redis is used for the task-list cache. The frontend image builds the Vite app and serves it with Nginx, which forwards `/api/` and `/health` to the backend.
+
+### Docker Hub publishing and image deployment
+
+The GitHub Actions CD workflow publishes `YOUR_DOCKERHUB_USERNAME/frontend` and `YOUR_DOCKERHUB_USERNAME/backend`, each tagged `v1` and `latest`. Configure the `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, and `POSTGRES_PASSWORD` repository secrets before running the workflow. Do not commit `.env` or put access tokens into workflow files.
+
+After the images are published, set `DOCKERHUB_USERNAME` in `.env` and start the image-only deployment with `docker compose -f docker-compose.deploy.yml up -d --wait`. That file contains no `build:` entries. Use `docker compose -f docker-compose.deploy.yml down` to stop it.
+
+### Design decisions
+
+1. The frontend uses a multi-stage build so the runtime image contains the static site and Nginx, not Node or build dependencies.
+2. All four services share a private Compose network so the backend reaches PostgreSQL and Redis by service name. Only the frontend and loopback backend ports are published; PostgreSQL and Redis stay internal.
+3. PostgreSQL data lives in a named volume, while health-based dependencies prevent the API from starting before its database and cache are ready.
